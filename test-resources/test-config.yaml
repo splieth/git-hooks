@@ -1,0 +1,9 @@
+regex: "\\[.+?\\]\\s(.*?)\\s.*"
+separator: "|"
+team:
+  - short: hug
+    name: Hugo Heimlich
+    email: hugo.heimlich@domain.com
+  - short: fli
+    name: Fliedbelt Igel
+    email: fliedbelt.igel@domain.com

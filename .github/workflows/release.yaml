@@ -1,0 +1,129 @@
+on:
+  push:
+    tags:
+      - '*'
+
+name: Release
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+  create_release:
+    name: create_release
+    needs: test
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: true
+          prerelease: false
+      - shell: bash
+        env:
+          UPLOAD_URL: ${{ steps.create_release.outputs.upload_url }}
+        run: |
+          echo ${UPLOAD_URL} > upload-url.txt
+      - name: Save upload url
+        uses: actions/upload-artifact@v1
+        with:
+          name: upload-url
+          path: upload-url.txt
+
+  build_macos:
+    name: build_macos
+    needs: create_release
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+      - uses: actions-rs/cargo@v1
+        name: build x86_64-apple-darwin
+        with:
+          command: build
+          args: --release --target x86_64-apple-darwin
+      - name: Save apple artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: apple-artifact
+          path: target/x86_64-apple-darwin/release/commit-msg
+
+  build_ubuntu:
+    name: build_ubuntu
+    needs: create_release
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions-rs/cargo@v1
+        name: build x86_64-unknown-linux-gnu
+        with:
+          command: build
+          args: --release --target x86_64-unknown-linux-gnu
+      - name: Save ubuntu artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: ubuntu-artifact
+          path: target/x86_64-unknown-linux-gnu/release/commit-msg
+
+  upload_assets:
+    name: upload_assets
+    needs: [build_macos, build_ubuntu]
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Download upload-url
+        uses: actions/download-artifact@v1
+        with:
+          name: upload-url
+      - name: Download apple-artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: apple-artifact
+      - name: Download ubuntu-artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: ubuntu-artifact
+      - name: Read upload url
+        id: read_upload_url
+        run: echo "::set-output name=upload_url::$(cat upload-url/upload-url.txt)"
+      - name: Upload x86_64-apple-darwin Release Asset
+        id: upload-x86_64-apple-darwin-release-asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          upload_url: ${{ steps.read_upload_url.outputs.upload_url }}
+          asset_path: apple-artifact/commit-msg
+          asset_name: commit-msg-x86_64-apple-darwin
+          asset_content_type: application/x-binary
+      - name: Upload x86_64-unknown-linux-gnu Release Asset
+        id: upload-x86_64-unknown-linux-gnu-release-asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          upload_url: ${{ steps.read_upload_url.outputs.upload_url }}
+          asset_path: ubuntu-artifact/commit-msg
+          asset_name: commit-msg-x86_64-unknown-linux-gnu
+          asset_content_type: application/x-binary

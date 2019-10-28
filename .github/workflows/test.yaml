@@ -1,0 +1,25 @@
+on:
+  push:
+    branches:
+      - develop
+
+name: Test
+
+jobs:
+  build_and_test:
+    name: run-tests
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Install latest nightly
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
