@@ -25,6 +25,7 @@ impl TeamMember {
 pub struct Config {
     pub regex: String,
     pub separator: String,
+    pub me: String,
     pub team: Vec<TeamMember>,
 }
 
@@ -32,6 +33,7 @@ pub fn read_config(path: &str) -> Config {
     let mut team_memebrs: Vec<TeamMember> = vec![];
     let contents = load_yaml_file(path);
     let regex = contents[0]["regex"].as_str().unwrap();
+    let me = contents[0]["me"].as_str().unwrap();
     let separator = contents[0]["separator"].as_str().unwrap();
     let team = contents[0]["team"].as_vec().unwrap();
     for item in team.iter() {
@@ -48,6 +50,7 @@ pub fn read_config(path: &str) -> Config {
     return Config {
         regex: regex.to_string(),
         separator: separator.to_string(),
+        me: me.to_string(),
         team: team_memebrs,
     };
 }
@@ -74,6 +77,7 @@ mod read_config {
     fn test_read_test_config() {
         let config = Config {
             regex: "\\[.+?\\]\\s(.*?)\\s.*".to_string(),
+            me: "fli".to_string(),
             separator: "|".to_string(),
             team: vec![TeamMember {
                 short: "hug".to_string(),
