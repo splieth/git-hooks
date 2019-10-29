@@ -8,7 +8,7 @@ use yaml_rust::YamlLoader;
 
 use self::yaml_rust::Yaml;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct TeamMember {
     pub short: String,
     pub name: String,
@@ -25,6 +25,7 @@ impl TeamMember {
 pub struct Config {
     pub regex: String,
     pub separator: String,
+    pub drop_shorts: bool,
     pub me: String,
     pub team: Vec<TeamMember>,
 }
@@ -35,6 +36,13 @@ pub fn read_config(path: &str) -> Config {
     let regex = contents[0]["regex"].as_str().unwrap();
     let me = contents[0]["me"].as_str().unwrap();
     let separator = contents[0]["separator"].as_str().unwrap();
+    let drop_shorts_opt = contents[0]["drop-shorts"].as_bool();
+    let drop_shorts  = if drop_shorts_opt.is_some() {
+        drop_shorts_opt.unwrap()
+    } else {
+        false
+    };
+
     let team = contents[0]["team"].as_vec().unwrap();
     for item in team.iter() {
         let m = item.as_hash().unwrap();
@@ -50,6 +58,7 @@ pub fn read_config(path: &str) -> Config {
     return Config {
         regex: regex.to_string(),
         separator: separator.to_string(),
+        drop_shorts: drop_shorts,
         me: me.to_string(),
         team: team_memebrs,
     };
@@ -77,8 +86,9 @@ mod read_config {
     fn test_read_test_config() {
         let config = Config {
             regex: "\\[.+?\\]\\s(.*?)\\s.*".to_string(),
-            me: "fli".to_string(),
             separator: "|".to_string(),
+            drop_shorts: true,
+            me: "fli".to_string(),
             team: vec![TeamMember {
                 short: "hug".to_string(),
                 name: "Hugo Heimlich".to_string(),
@@ -91,6 +101,28 @@ mod read_config {
         };
 
         let path = "test-resources/test-config.yaml";
+        assert_eq!(read_config(path), config);
+    }
+
+    #[test]
+    fn test_read_test_config_without_drop_shorts() {
+        let config = Config {
+            regex: "\\[.+?\\]\\s(.*?)\\s.*".to_string(),
+            separator: "|".to_string(),
+            drop_shorts: false,
+            me: "fli".to_string(),
+            team: vec![TeamMember {
+                short: "hug".to_string(),
+                name: "Hugo Heimlich".to_string(),
+                email: "hugo.heimlich@domain.com".to_string(),
+            }, TeamMember {
+                short: "fli".to_string(),
+                name: "Fliedbelt Igel".to_string(),
+                email: "fliedbelt.igel@domain.com".to_string(),
+            }],
+        };
+
+        let path = "test-resources/test-config-without-drop-shorts.yaml";
         assert_eq!(read_config(path), config);
     }
 }

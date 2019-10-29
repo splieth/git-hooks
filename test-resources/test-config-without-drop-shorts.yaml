@@ -1,7 +1,6 @@
 regex: "\\[.+?\\]\\s(.*?)\\s.*"
 separator: "|"
 me: fli
-drop-shorts: true
 team:
   - short: hug
     name: Hugo Heimlich
