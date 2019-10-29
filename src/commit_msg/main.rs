@@ -57,9 +57,9 @@ fn write_to_file(filename: &str, msg: &str) -> () {
 }
 
 
-fn build_msg(old_msg: &str, ps: Vec<config::TeamMember>) -> String {
+fn build_msg(old_msg: &str, ps: Vec<config::TeamMember>, me: String) -> String {
     let mut message = format!("{}\n", old_msg);
-    for x in ps.iter().skip(1) {
+    for x in ps.iter().filter(|x| x.short != me) {
         let n = config::TeamMember::co_authored_by(&x);
         message = format!("{}\n{}", message, n)
     }
@@ -115,7 +115,7 @@ fn build_commit_msg(input: &str, config: config::Config) -> returns::Result<Stri
     if members_result.is_err() {
         return Err(members_result.err().unwrap());
     }
-    let msg = build_msg(input, members_result.unwrap());
+    let msg = build_msg(input, members_result.unwrap(), config.me);
 
     return Ok(msg);
 }
@@ -124,11 +124,11 @@ fn build_commit_msg(input: &str, config: config::Config) -> returns::Result<Stri
 #[cfg(test)]
 mod build_commit_msg {
     use super::*;
-
     #[test]
     fn test_pairing() {
         let config = config::Config {
             regex: "\\[.+?\\]\\s(.*?)\\s.*".to_string(),
+            me: "hug".to_string(),
             separator: "|".to_string(),
             team: vec![config::TeamMember {
                 short: "hug".to_string(),
@@ -145,11 +145,33 @@ mod build_commit_msg {
 
         assert_eq!(build_commit_msg(input, config).unwrap(), expected.to_string());
     }
+    #[test]
+    fn test_me_not_first() {
+        let config = config::Config {
+            regex: "\\[.+?\\]\\s(.*?)\\s.*".to_string(),
+            me: "hug".to_string(),
+            separator: "|".to_string(),
+            team: vec![config::TeamMember {
+                short: "hug".to_string(),
+                name: "Hugo Heli".to_string(),
+                email: "hugo.heli@domain.com".to_string(),
+            }, config::TeamMember {
+                short: "lup".to_string(),
+                name: "Lud Lopi".to_string(),
+                email: "lud.lopi@domain.com".to_string(),
+            }],
+        };
+        let input = "[12] lup|hug some commit message";
+        let expected = "[12] lup|hug some commit message\n\nCo-authored-by: Lud Lopi <lud.lopi@domain.com>";
+
+        assert_eq!(build_commit_msg(input, config).unwrap(), expected.to_string());
+    }
 
     #[test]
     fn test_team_member_missing() {
         let config = config::Config {
             regex: "\\[.+?\\]\\s(.*?)\\s.*".to_string(),
+            me: "hug".to_string(),
             separator: ",".to_string(),
             team: vec![config::TeamMember {
                 short: "hug".to_string(),

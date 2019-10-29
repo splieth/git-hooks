@@ -1,6 +1,6 @@
 [package]
 name = "git-hooks"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["fr3dch3n <git@frederik-mars.de>"]
 edition = "2018"
 

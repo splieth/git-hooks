@@ -42,6 +42,7 @@ When compiled and linked successfully, a configuration like:
 ```yaml
 regex: "\\[.+?\\]\\s(.*?)\\s.*"
 separator: "|"
+me: fli
 team:
   - short: hug
     name: Hugo Heimlich
@@ -61,7 +62,7 @@ to
 [STORY-123] hug|fli some commit message
 
 
-Co-authored-by: Fliedbelt Igel <fliedbelt.igel@domain.com>
+Co-authored-by: Hugo Heimlich <hugo.heimlich@domain.com>
 ```
 
 ### Configuration
@@ -70,6 +71,7 @@ The Configuration is a simple yaml file.
 ```yaml
 regex: "<Regex to get team-members from the commit-msg>"
 separator: "<separator between team-members>"
+me: <your short name>
 team:
   - short: <short name in commit-msg>
     name: <full name>
@@ -89,6 +91,8 @@ Run `make test` to execute all tests via _cargo_.
 
 ## Release History
 
+* v1.0.0
+    * add `me` to then ignore your own short-name when building the co-authored-by-lines (commit-msg)
 * v0.1.0
     * initial release
 
